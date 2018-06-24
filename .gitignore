@@ -8,3 +8,6 @@
 /build
 /captures
 .externalNativeBuild
+# ignore all logs
+*.log
+*.jar
