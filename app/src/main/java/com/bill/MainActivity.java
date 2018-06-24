@@ -7,9 +7,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
-import android.graphics.Paint;
 import android.graphics.SurfaceTexture;
-import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -18,49 +16,39 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
-import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
-import android.net.CaptivePortal;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.TestLooperManager;
-import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.FileProvider;
-import android.support.v7.app.AlertDialog;
-import android.util.Log;
-import android.util.Size;
-import android.util.SparseIntArray;
-import android.view.Surface;
-import android.view.SurfaceView;
-import android.view.TextureView;
-import android.view.View;
-import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.util.Size;
+import android.util.SparseIntArray;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Surface;
+import android.view.TextureView;
+import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
-import com.google.android.gms.vision.CameraSource;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcode;
 import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetector;
@@ -68,16 +56,10 @@ import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MainActivity extends AppCompatActivity
@@ -92,16 +74,17 @@ public class MainActivity extends AppCompatActivity
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     ExecutorService pool = Executors.newFixedThreadPool(1);
     long lastTried = System.currentTimeMillis();
+
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
         ORIENTATIONS.append(Surface.ROTATION_90, 0);
         ORIENTATIONS.append(Surface.ROTATION_180, 270);
         ORIENTATIONS.append(Surface.ROTATION_270, 180);
     }
+
     private String cameraId;
     protected CameraDevice cameraDevice;
     protected CameraCaptureSession cameraCaptureSessions;
-    protected CaptureRequest captureRequest;
     protected CaptureRequest.Builder captureRequestBuilder;
     protected CaptureRequest.Builder captureRequestBuilderView;
 
@@ -156,19 +139,7 @@ public class MainActivity extends AppCompatActivity
         takePicture1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    try {
-                        manager.setTorchMode(cameraId, true);
-                    } catch (CameraAccessException e) {
-                        e.printStackTrace();
-                    }
-                }
 
-                //takePicture();
-                //ActivityCompat.requestPermissions(MainActivity.this, new
-                  //
-                //      String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_WRITE_PERMISSION);
             }
         });
 
@@ -185,14 +156,17 @@ public class MainActivity extends AppCompatActivity
             //open your camera here
             openCamera();
         }
+
         @Override
         public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
             // Transform you image captured size according to the surface width and height
         }
+
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
             return false;
         }
+
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture surface) {
         }
@@ -211,9 +185,9 @@ public class MainActivity extends AppCompatActivity
                 }
             case REQUEST_CAMERA_PERMISSION:
                 if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
-                        // close the app
-                        Toast.makeText(MainActivity.this, "Sorry!!!, you can't use this app without granting permission", Toast.LENGTH_LONG).show();
-                        finish();
+                    // close the app
+                    Toast.makeText(MainActivity.this, "Sorry!!!, you can't use this app without granting permission", Toast.LENGTH_LONG).show();
+                    finish();
                 }
         }
     }
@@ -237,34 +211,31 @@ public class MainActivity extends AppCompatActivity
                 image = reader.acquireNextImage();
                 FirebaseVisionImage firebaseVisionImage = FirebaseVisionImage.fromMediaImage(image, 0);
                 Task<List<FirebaseVisionBarcode>> result = detector.detectInImage(firebaseVisionImage)
-                        .addOnSuccessListener(pool ,new OnSuccessListener<List<FirebaseVisionBarcode>>() {
+                        .addOnSuccessListener(pool, new OnSuccessListener<List<FirebaseVisionBarcode>>() {
                             @Override
                             public void onSuccess(List<FirebaseVisionBarcode> barcodes) {
                                 String values = null;
-                                if(barcodes.size() > 0) {
+                                if (barcodes.size() > 0) {
                                     values = "";
                                     for (FirebaseVisionBarcode barcode : barcodes) {
                                         values = values.concat(barcode.getRawValue() + "\n");
                                     }
                                     Log.i("BARCODE", values);
+
+                                    Intent intent = new Intent(MainActivity.this, AddProductActivity.class);
+                                    startActivity(intent);
+                                } else {
+                                    takePicture();
                                 }
-                                final String txt = (values != null)?values:"No Value";
-                                if(values != null) {
+                                /*final String txt = (values != null) ? values : "No Value";
+                                if (values != null) {
                                     runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Log.i("OnSu", "Ohh1111");
-                                            // Stuff that updates the UI
-                                            //alertDialogBuilder.setMessage(txt)
-                                             //        .setTitle("Barcode");
-
-                                            //AlertDialog dialog = alertDialogBuilder.create();
-
-                                            scanResult.setText(txt);
-                                            //dialog.show();
+                                        scanResult.setText(txt);
                                         }
                                     });
-                                }
+                                }*/
                             }
                         })
                         .addOnFailureListener(pool, new OnFailureListener() {
@@ -273,6 +244,7 @@ public class MainActivity extends AppCompatActivity
                                 // Task failed with an exception
                                 // ...
                                 Log.e("BARCODE", e.getMessage());
+                                takePicture();
                                 //scanResult.setText(e.getMessage());
                             }
                         });
@@ -296,12 +268,12 @@ public class MainActivity extends AppCompatActivity
                     //scannedImage.setImageBitmap(bitmap);
                     FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
                     Task<List<FirebaseVisionBarcode>> result = detector.detectInImage(image)
-                            .addOnSuccessListener(this ,new OnSuccessListener<List<FirebaseVisionBarcode>>() {
+                            .addOnSuccessListener(this, new OnSuccessListener<List<FirebaseVisionBarcode>>() {
                                 @Override
                                 public void onSuccess(List<FirebaseVisionBarcode> barcodes) {
                                     // Task completed successfully
                                     // ...
-                                    if(barcodes.size() > 0) {
+                                    if (barcodes.size() > 0) {
                                         String values = "";
                                         for (FirebaseVisionBarcode barcode : barcodes) {
                                             values = values.concat(barcode.getRawValue() + "\n");
@@ -335,6 +307,8 @@ public class MainActivity extends AppCompatActivity
             }
         }
     }
+
+
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -423,10 +397,12 @@ public class MainActivity extends AppCompatActivity
             cameraDevice = camera;
             createCameraPreview();
         }
+
         @Override
         public void onDisconnected(CameraDevice camera) {
             cameraDevice.close();
         }
+
         @Override
         public void onError(CameraDevice camera, int error) {
             cameraDevice.close();
@@ -443,37 +419,43 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
+    public void takePicture(){
+        if(cameraDevice == null && cameraCaptureSessions == null){
+            return;
+        }
+        try {
+            int rotation = getWindowManager().getDefaultDisplay().getRotation();
+            captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
+            //if (((System.currentTimeMillis() - lastTried) / 1000) > 1 /*&& isProcessed.compareAndSet(true, false)*/) {
+                cameraCaptureSessions.capture(captureRequestBuilder.build(), captureCompleteCallbackImage, mBackgroundHandler);
+            //}
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
     CameraCaptureSession.CaptureCallback captureCompleteCallbackView = new CameraCaptureSession.CaptureCallback() {
         @Override
         public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
             super.onCaptureCompleted(session, request, result);
             //Log.i("captureCallbackView", "Completed");
-            try {
-                if ( ((System.currentTimeMillis() - lastTried)/1000) > 1 && isProcessed.compareAndSet(true,false)) {
-                    session.capture(captureRequestBuilder.build(), captureCompleteCallbackImage, mBackgroundHandler);
-                }
-            } catch (CameraAccessException e) {
-                e.printStackTrace();
-            }
+
         }
     };
 
 
-
     protected void updatePreview() {
-        if(null == cameraDevice) {
+        if (null == cameraDevice) {
             Log.e("updatePreview", "updatePreview error, return");
         }
-
-        int rotation = getWindowManager().getDefaultDisplay().getRotation();
-        captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
-
         try {
             cameraCaptureSessions.setRepeatingRequest(captureRequestBuilderView.build(), captureCompleteCallbackView, mBackgroundHandler);
+            takePicture();
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
+
     private void closeCamera() {
         if (null != cameraDevice) {
             cameraDevice.close();
@@ -529,7 +511,7 @@ public class MainActivity extends AppCompatActivity
 
             //captureRequestBuilderView
             reader.setOnImageAvailableListener(readerListener, mBackgroundHandler);
-            cameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback(){
+            cameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
                     //The camera is already closed
@@ -540,6 +522,7 @@ public class MainActivity extends AppCompatActivity
                     cameraCaptureSessions = cameraCaptureSession;
                     updatePreview();
                 }
+
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
                     Toast.makeText(MainActivity.this, "Configuration change", Toast.LENGTH_SHORT).show();
@@ -608,6 +591,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onResume() {
         super.onResume();
+        isProcessed.set(true);
         //stopBackgroundThread();
         //closeCamera();
         Log.e("onResume", "onResume");
